@@ -1,0 +1,15 @@
+{% extends 'neontology/neontology_default.html' %}
+{% block brand_text %}Flask Neontology Demo{% endblock %}
+{% block topnavitems %}
+<li class="nav-item">
+<a class="nav-link" href="/components/">Components</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="/pages/">Docs</a>
+</li>
+{% if config["APP_ENV"] != "FREEZE" %}
+<li class="nav-item">
+<a class="nav-link" href="/create-page/">Create Page</a>
+</li>
+{% endif %}
+{% endblock topnavitems %}

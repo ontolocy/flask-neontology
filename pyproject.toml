@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+markers = [
+    "uses_graph: marks tests that require access to neo4j (deselect with '-m \"not uses_graph\"')"
+]
+testpaths = ["tests"]
+pythonpath = ["flask_neontology", "app"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]

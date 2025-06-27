@@ -1,0 +1,8 @@
+flask
+neontology
+pydantic
+Frozen-Flask
+markdown
+markdown-link-attr-modifier
+email-validator
+PyYAML

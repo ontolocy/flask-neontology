@@ -1,0 +1,64 @@
+from flask_neontology.ontology.page import NeontologyPageNode
+
+
+def test_autograph_home(client, populated_graph):
+    response = client.get("/autograph/")
+
+    assert "<h1>Autograph</h1>" in response.text
+
+    assert "<h2>Schema</h2>" in response.text
+    assert 'id="graphViewer' in response.text
+
+    assert "NeontologyPage</h3>" in response.text
+    assert "NeontologyAuthor</h3>" in response.text
+
+
+def test_autograph_label_list_view(client, populated_graph):
+    response = client.get("/autograph/NeontologyPage/")
+
+    assert '<th scope="col">Slug</th>' in response.text
+    assert 'href="/autograph/NeontologyPage/node/page-1/">' in response.text
+
+
+def test_autograph_label_create_view(client, populated_graph):
+    response = client.get("/autograph/NeontologyPage/create/")
+
+    assert "Create a NeontologyPage</h1>" in response.text
+    assert "Content*" in response.text
+
+
+def test_autograph_label_create_post(client, populated_graph, use_graph):
+    client.post(
+        "/autograph/NeontologyPage/create/",
+        data={
+            "content": "Just some dummy content",
+            "slug": "test-created-page-1",
+            "title": "Test Page 1",
+        },
+    )
+
+    assert (
+        NeontologyPageNode.match("test-created-page-1").content
+        == "Just some dummy content"
+    )
+
+
+def test_autograph_label_item_view(client, populated_graph):
+    response = client.get("/autograph/NeontologyPage/node/page-1/")
+
+    assert "<h1>Page 1</h1>" in response.text
+    assert "This is page1 content." in response.text
+
+
+def test_autograph_label_item_edit_view(client, populated_graph):
+    response = client.get("/autograph/NeontologyPage/node/page-1/update/")
+
+    assert "Edit &#39;Page 1&#39; Node" in response.text
+    assert "## This is page1 content.</textarea>" in response.text
+
+
+def test_autograph_label_item_create_relationships_view(client, populated_graph):
+    response = client.get("/autograph/NeontologyPage/node/page-1/create-relationships/")
+
+    assert '<option value="page-1">Page 1</option>' in response.text
+    assert '<option value="Author 1">Author 1</option>' in response.text

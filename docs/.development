@@ -1,0 +1,49 @@
+# Developing Ontolocy
+
+## Testing
+
+We use pytest for testing.
+
+Many tests require docker - you can use the included `docker-compose.yml` file.
+
+```bash
+docker-compose up
+```
+
+Run all the tests (stopping as soon as something fails):
+
+```bash
+python -m pytest -x
+```
+
+N.B. Running through `python -m` [adds the current directory](https://docs.pytest.org/en/latest/how-to/usage.html#calling-pytest-through-python-m-pytest) to `sys.path` which helps find the relevant packages (`app` and `flask_neontology`).
+
+Many of the tests require access to a neo4j/memgraph instance. These are identified with the 'uses_graph' mark. We can skip these tests like this:
+
+```bash
+python -m pytest -m "not uses_graph"
+```
+
+And check the coverage with:
+
+```bash
+python -m pytest --cov=flask_neontology
+python -m pytest --cov=flask_neontology --cov-report=html
+```
+
+You can browse to the generated report at `htmlcov/index.html` or spin up a locally hosted version:
+
+```bash
+python -m http.server --directory htmlcov
+```
+
+## Linting
+
+Use ruff:
+
+```bash
+ruff check
+ruff check --fix
+ruff format --check --diff
+ruff format
+```
