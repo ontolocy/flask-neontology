@@ -45,6 +45,7 @@ def create_app(app_env="DEV", config: Optional[GraphEngineConfig] = None) -> Fla
 
     nm.init_app(
         app=app,
+        graph_config=config,
         autograph_nodes=nodes,
         views=node_pages,
     )
