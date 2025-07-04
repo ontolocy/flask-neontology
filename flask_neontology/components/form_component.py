@@ -1,7 +1,7 @@
 import random
 import string
 from enum import Enum
-from typing import Any, ClassVar, List, Optional, get_args
+from typing import Any, ClassVar, List, Optional, Union, get_args
 
 from neontology import BaseNode, BaseRelationship
 from neontology.schema_utils import SchemaProperty, extract_type_mapping
@@ -12,7 +12,9 @@ from .component import Component
 
 
 class ButtonComponent(Component):
-    template: ClassVar = """<button type="{{data.type}}" class="btn btn-primary">{{data.text}}</button>"""  # noqa: E501
+    template: ClassVar = (
+        """<button type="{{data.type}}" class="btn btn-primary">{{data.text}}</button>"""  # noqa: E501
+    )
 
     text: str = "submit"
     type: str = "submit"
@@ -155,7 +157,7 @@ class NodeFormModel:
 
 
 class ModelFormComponent(FormComponent):
-    model: type[BaseModel | BaseNode]
+    model: type[Union[BaseModel, BaseNode]]
     default_data: Optional[BaseModel] = None
     method: Optional[str] = "post"
     exclude_fields: List[str] = []
