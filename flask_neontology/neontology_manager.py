@@ -47,7 +47,7 @@ class NeontologyManager:
         if app is not None:
             self.init_app(
                 app,
-                graph_config,
+                graph_config=graph_config,
                 autograph_nodes=autograph_nodes,
                 views=views,
             )
