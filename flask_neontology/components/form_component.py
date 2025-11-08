@@ -205,7 +205,7 @@ class ModelFormComponent(FormComponent):
                 )
                 self.fields.append(field)
 
-            elif issubclass(field_type, Enum):
+            elif isinstance(field_type, type) and issubclass(field_type, Enum):
                 choices = [(x.value, x.name) for x in field_type]
                 field = FIELD_MAPPINGS["Enum"](
                     label=field_name.title(),
