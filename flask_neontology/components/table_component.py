@@ -113,7 +113,7 @@ class NodeListTableComponent(TableComponent):
     nodes: List[BaseNode]
     url_pattern: Optional[str] = None
     url_field: Optional[str] = None
-    fields: Optional[List[str] | Dict[str, str]] = None
+    fields: Optional[Union[List[str], Dict[str, str]]] = None
 
     @field_validator("nodes")
     def check_nodes_uniformity(cls, v):

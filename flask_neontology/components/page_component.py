@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Union
 
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -98,7 +98,7 @@ class PageComponent(Component):
     title: Optional[str] = None
     description: Optional[str] = None
     sticky_topnav: bool = False
-    sections: List[SectionComponent | Component] = []
+    sections: List[Union[SectionComponent, Component]] = []
     elements: PageElements = PageElements()
 
     @field_validator("sections", mode="before")

@@ -1,7 +1,7 @@
 import random
 import string
 from enum import Enum
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar, List, Optional, Union, get_args
 
 from neontology import BaseNode, BaseRelationship
 from neontology.schema_utils import SchemaProperty, extract_type_mapping
@@ -12,7 +12,9 @@ from .component import Component
 
 
 class ButtonComponent(Component):
-    template: ClassVar = """<button type="{{data.type}}" class="btn btn-primary">{{data.text}}</button>"""  # noqa: E501
+    template: ClassVar = (
+        """<button type="{{data.type}}" class="btn btn-primary">{{data.text}}</button>"""  # noqa: E501
+    )
 
     text: str = "submit"
     type: str = "submit"
@@ -69,7 +71,7 @@ class SelectField(FieldComponent):
     template: ClassVar = """
 <div class="mb-3">
 <label for="{{data.field_id}}" class="form-label">{{data.label}}{% if data.required == true %}*{%endif%}</label>
-<select type="text" name="{{data.name}}" class="form-control" id="{{data.field_id}}"{% if data.required == true %} required{% endif %}{% if data.disabled == true %} disabled{% endif %}>
+<select type="text" name="{{data.name}}" class="form-control" id="{{data.field_id}}"{% if data.required == true %} required{% endif %}{% if data.disabled == true %} disabled{% endif %}  {% if data.multiple == true %} multiple{% endif %}>
 {% if data.required != true %}<option></option>{%endif%}
 {% for option in data.options %}
 <option value="{{option[0]}}">{{option[1]}}</option>
@@ -78,6 +80,7 @@ class SelectField(FieldComponent):
 </div>
 """  # noqa: E501
     options: List[tuple]
+    multiple: bool = False
 
 
 class HiddenField(FieldComponent):
@@ -154,7 +157,7 @@ class NodeFormModel:
 
 
 class ModelFormComponent(FormComponent):
-    model: type[BaseModel | BaseNode]
+    model: type[Union[BaseModel, BaseNode]]
     default_data: Optional[BaseModel] = None
     method: Optional[str] = "post"
     exclude_fields: List[str] = []
@@ -189,7 +192,20 @@ class ModelFormComponent(FormComponent):
             else:
                 placeholder = None
 
-            if issubclass(field_type, Enum):
+            if str(field_type).startswith("list") and "Enum" in str(field_type):
+                enum_type = get_args(field_type)[0]
+                choices = [(x.value, x.name) for x in enum_type]
+                field = SelectField(
+                    label=field_name.title(),
+                    name=field_name,
+                    required=prop.required,
+                    placeholder=placeholder,
+                    options=choices,
+                    multiple=True,
+                )
+                self.fields.append(field)
+
+            elif isinstance(field_type, type) and issubclass(field_type, Enum):
                 choices = [(x.value, x.name) for x in field_type]
                 field = FIELD_MAPPINGS["Enum"](
                     label=field_name.title(),
