@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="Flask-Neontology",
-    version="0.0.1",
+    version="0.0.2",
     packages=find_packages(include=["flask_neontology", "flask_neontology.*"]),
     include_package_data=True,
     python_requires=">=3.8",
