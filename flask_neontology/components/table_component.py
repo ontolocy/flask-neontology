@@ -64,7 +64,7 @@ $(document).ready( function () {
     "pageLength": {{data.datatable_page_length}},
     "ordering": {% if data.datatable_ordering %}true{% else %}false{% endif %},
     "lengthChange": {% if data.datatable_length_change %}true{% else %}false{% endif %},
-    "searching": {% if data.datatable_searching %}true{% else %}false{% endif %},
+    "searching": {% if data.datatable_searching %}true{% else %}false{% endif %}
   });
 } );
 </script>
