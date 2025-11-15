@@ -62,7 +62,8 @@ $(document).ready( function () {
     "pageLength": {{data.datatable_page_length}},
     "ordering": {% if data.datatable_ordering %}true{% else %}false{% endif %},
     "lengthChange": {% if data.datatable_length_change %}true{% else %}false{% endif %},
-    "searching": {% if data.datatable_searching %}true{% else %}false{% endif %}
+    "searching": {% if data.datatable_searching %}true{% else %}false{% endif %},
+    "columnControl": ['order', ['orderAsc', 'orderDesc', 'search']]
   });
 } );
 </script>
@@ -78,6 +79,8 @@ $(document).ready( function () {
     datatable_searching: Optional[bool] = None
     datatable_ordering: bool = False
 
+    datatable_columncontrol: bool = False
+
     table_id: Optional[str] = Field(default_factory=uuid4)
 
     @model_validator(mode="after")
@@ -90,9 +93,15 @@ $(document).ready( function () {
                     " integrity='sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo='"
                     " crossorigin='anonymous'></script>"
                 ),
-                "<script src='https://cdn.datatables.net/2.1.2/js/dataTables.min.js'></script>",
-                "<script src='https://cdn.datatables.net/2.1.2/js/dataTables.bootstrap5.min.js'></script>",
+                "<script src='https://cdn.datatables.net/2.3.5/js/dataTables.min.js'></script>",
+                "<script src='https://cdn.datatables.net/2.3.5/js/dataTables.bootstrap5.min.js'></script>",
             ]
+
+            if self.datatable_columncontrol is True:
+                self.headtags += [
+                    "<link href='https://cdn.datatables.net/columncontrol/1.1.1/css/columnControl.dataTables.min.css' rel='stylesheet'>",  # noqa: E501
+                    "<script src='https://cdn.datatables.net/columncontrol/1.1.1/js/dataTables.columnControl.min.js'></script>",  # noqa: E501
+                ]
 
         return self
 
@@ -143,17 +152,26 @@ class NodeListTableComponent(TableComponent):
 
             if data.get("url_pattern"):
                 if data.get("url_field"):
-                    url_column = "url_field"
+                    url_column = data["url_field"]
                 elif first_node.__primaryproperty__ in fields:
                     url_column = first_node.__primaryproperty__
                 else:
                     url_column = list(fields.items())[0][1]
 
+            else:
+                url_column = None
+
             for title, key in fields.items():
-                if isinstance(data["fields"], list) and title in ["__Str__", "__str__"]:
+                if isinstance(data.get("fields"), list) and title in [
+                    "__Str__",
+                    "__str__",
+                ]:
                     title = "Node"
 
-                elif isinstance(data["fields"], list) and title in ["__Pp__", "__pp__"]:
+                elif isinstance(data.get("fields"), list) and title in [
+                    "__Pp__",
+                    "__pp__",
+                ]:
                     title = "Primary Property"
 
                 if key == url_column:
@@ -172,18 +190,19 @@ class NodeListTableComponent(TableComponent):
 
     @model_validator(mode="after")
     def generate_rows(self) -> "NodeListTableComponent":
-        self.rows = [
-            {
+        self.rows = []
+        for x in self.nodes:
+            row = {
                 **x.model_dump(),
-                **{
-                    "fn_node_link_field": self.url_pattern.replace(
-                        "<pp>", urllib.parse.quote(str(x.get_pp()))
-                    ),
-                    "__str__": str(x),
-                    "__pp__": str(x.get_pp()),
-                },
+                "__str__": str(x),
+                "__pp__": str(x.get_pp()),
             }
-            for x in self.nodes
-        ]
+
+            if self.url_pattern:
+                row["fn_node_link_field"] = self.url_pattern.replace(
+                    "<pp>", urllib.parse.quote(str(x.get_pp()))
+                )
+
+            self.rows.append(row)
 
         return self
