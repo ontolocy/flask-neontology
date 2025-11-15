@@ -59,11 +59,12 @@ class TableComponent(Component):
 <script type="text/javascript">
 $(document).ready( function () {
   $('#{{data.table_id}}').DataTable({
+    {% if data.datatable_columncontrol %}
+    "columnControl": ['order', ['orderAsc', 'orderDesc', 'search']],{% endif %}
     "pageLength": {{data.datatable_page_length}},
     "ordering": {% if data.datatable_ordering %}true{% else %}false{% endif %},
     "lengthChange": {% if data.datatable_length_change %}true{% else %}false{% endif %},
     "searching": {% if data.datatable_searching %}true{% else %}false{% endif %},
-    "columnControl": ['order', ['orderAsc', 'orderDesc', 'search']]
   });
 } );
 </script>
