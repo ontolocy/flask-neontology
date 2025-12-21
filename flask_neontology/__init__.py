@@ -1,5 +1,6 @@
 from .neontology_manager import NeontologyManager
 from .views import (
+    NeontologyAPIView,
     NeontologyEndpointView,
     NeontologyListView,
     NeontologyNodeView,
@@ -14,6 +15,7 @@ __all__ = [
     "NeontologyListView",
     "NeontologyNodeView",
     "NeontologyViewset",
+    "NeontologyAPIView",
     "page_element",
     "page_section",
 ]

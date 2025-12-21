@@ -12,9 +12,7 @@ from .component import Component
 
 
 class ButtonComponent(Component):
-    template: ClassVar = (
-        """<button type="{{data.type}}" class="btn btn-primary">{{data.text}}</button>"""  # noqa: E501
-    )
+    template: ClassVar = """<button type="{{data.type}}" class="btn btn-primary">{{data.text}}</button>"""  # noqa: E501
 
     text: str = "submit"
     type: str = "submit"

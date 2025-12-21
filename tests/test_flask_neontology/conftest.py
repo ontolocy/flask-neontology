@@ -5,6 +5,7 @@ from flask import Flask
 from neontology import BaseNode, BaseRelationship
 
 from flask_neontology import (
+    NeontologyAPIView,
     NeontologyEndpointView,
     NeontologyListView,
     NeontologyManager,
@@ -77,6 +78,26 @@ class DummyEndpointView(NeontologyEndpointView):
     endpoint = "test-endpoint"
 
 
+class DummyAPIView(NeontologyAPIView):
+    model = DummyNode
+    resource_name = "dummies"
+    tag_description = "API endpoints for dummy nodes."
+
+    related_resources = {"dum-dummies": (DummyNode, "get_related_dum_dummies")}
+
+    def get_related_dum_dummies(self, pp: str):
+        this_node = self.match_node(pp)
+        if this_node:
+            results = this_node.get_related(
+                relationship_types=["DUMMY_RELATIONSHIP"]
+            ).nodes
+
+            return [r for r in results if r.get_pp() != pp]
+
+        else:
+            return None
+
+
 @pytest.fixture
 def populate_dummy_nodes(use_graph):
     foo = DummyNode(name="foo")
@@ -84,6 +105,9 @@ def populate_dummy_nodes(use_graph):
 
     bar = DummyNode(name="bar")
     bar.merge()
+
+    rel = DummyRelationship(source=foo, target=bar, optional_prop="example")
+    rel.merge()
 
 
 @pytest.fixture
@@ -106,6 +130,7 @@ def mini_app(get_graph_config, populate_dummy_nodes, use_graph):
         graph_config=get_graph_config,
         autograph_nodes=[DummyNode],
         views=[DummyEndpointView, DummyListView, DummyNodeView],
+        api_views={"v1": [DummyAPIView]},
     )
 
     @app.route("/")

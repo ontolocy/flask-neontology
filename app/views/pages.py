@@ -14,7 +14,9 @@ from flask_neontology.views import (
     page_element,
     page_section,
 )
+from flask_neontology.views.apiview import NeontologyAPIView
 
+from ..ontology.author import NeontologyAuthorNode
 from ..ontology.page import NeontologyPageNode
 
 
@@ -71,3 +73,17 @@ class NeontologyPageView(NeontologyNodeView):
             raise ValueError("Node not defined on NeontologyPageView")
         md = MarkdownComponent(text=self.node.content)
         return md
+
+
+class PageAPIView(NeontologyAPIView):
+    model = NeontologyPageNode
+    resource_name = "pages"
+    tag_description = "API endpoints for documentation pages."
+
+    related_resources = {"authors": (NeontologyAuthorNode, "get_related_authors")}
+
+    def get_related_authors(self, id: str):
+        page = self.match_node(id)
+        if page:
+            return page.author_nodes()
+        return None
