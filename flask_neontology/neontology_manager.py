@@ -6,6 +6,7 @@ from flask import Blueprint, Flask, g
 from neontology import BaseNode, GraphConnection, init_neontology
 from neontology.graphengines import Neo4jConfig
 from neontology.graphengines.graphengine import GraphEngineConfig
+from spectree import Response, SpecTree, Tag
 
 from .autograph import (
     AutographViewset,
@@ -17,7 +18,7 @@ from .autograph import (
     autograph_view,
 )
 from .commands import export, freeze, ingest
-from .views import NeontologyView
+from .views import NeontologyAPIView, NeontologyView
 
 
 def loc():
@@ -29,10 +30,7 @@ def loc():
 bp = Blueprint(
     "neontology_core",
     __name__,
-    # url_prefix="/nodes",
     template_folder=loc() + "templates",
-    # static_folder=loc() + "static",
-    # static_url_path="/neontology/static",
 )
 
 
@@ -43,6 +41,7 @@ class NeontologyManager:
         graph_config: Optional[GraphEngineConfig] = None,
         autograph_nodes: List[BaseNode] = [],
         views: List[type[NeontologyView]] = [],
+        api_views: dict[str, List[type[NeontologyAPIView]]] = {},
     ):
         if app is not None:
             self.init_app(
@@ -50,6 +49,7 @@ class NeontologyManager:
                 graph_config=graph_config,
                 autograph_nodes=autograph_nodes,
                 views=views,
+                api_views=api_views,
             )
 
     def init_app(
@@ -59,6 +59,7 @@ class NeontologyManager:
         autograph_nodes: List[type[BaseNode]] = [],
         autograph_decorators: List = [],
         views: List[type[NeontologyView]] = [],
+        api_views: dict[str, List[type[NeontologyAPIView]]] = {},
     ) -> None:
         app.neontology_manager = self  # type: ignore[attr-defined]
 
@@ -92,6 +93,24 @@ class NeontologyManager:
         # register neontology views
         if views:
             self.register_views(views, app)
+
+        self.api_views = api_views
+
+        # register neontology API views
+        if api_views:
+            self.api = {}
+            for api_ver, api_ver_views in api_views.items():
+                # Initialize SpecTree
+                self.api[api_ver] = SpecTree(
+                    "flask",
+                    title="API",
+                    version=api_ver,
+                    description=f"API {api_ver} Documentation",
+                    mode="strict",
+                    path="apidoc/" + api_ver,
+                )
+                self.register_api_views(api_ver_views, api_ver, app)
+                self.api[api_ver].register(app)
 
         # set up jinja
 
@@ -167,6 +186,124 @@ class NeontologyManager:
         for view in views:
             new_view = view.as_view(view.view_name())
             app.add_url_rule(view.view_url_rule(), view_func=new_view)
+
+    def register_api_views(
+        self, api_views: List[type[NeontologyAPIView]], api_ver, app: Flask
+    ) -> None:
+        for api_view in api_views:
+            api_view.validate_configuration()
+
+            # Create tag for documentation grouping
+            tag = Tag(
+                name=api_view.resource_name.title(),
+                description=api_view.tag_description,
+            )
+
+            # Store tag and api reference in the view class
+            api_view._tag = tag
+            api_view._api = self.api[api_ver]
+
+            # Create decorated methods
+            list_view = self._create_list_view(api_view, tag, api_ver)
+            detail_view = self._create_detail_view(api_view, tag, api_ver)
+
+            # Register routes
+            endpoint_base = f"{api_view.resource_name}_api"
+
+            app.add_url_rule(
+                api_view.get_list_endpoint(api_ver),
+                view_func=list_view,
+                endpoint=f"{endpoint_base}_list",
+                methods=["GET"],
+            )
+
+            app.add_url_rule(
+                api_view.get_detail_endpoint(api_ver),
+                view_func=detail_view,
+                endpoint=f"{endpoint_base}_detail",
+                methods=["GET"],
+            )
+
+            # Register related resource endpoints
+            for relationship, (
+                related_model,
+                _,
+            ) in api_view.related_resources.items():
+                related_view = self._create_related_view(
+                    api_view, relationship, related_model, tag, api_ver
+                )
+
+                app.add_url_rule(
+                    api_view.get_related_endpoint(relationship, api_ver),
+                    view_func=related_view,
+                    endpoint=f"{endpoint_base}_{relationship}",
+                    methods=["GET"],
+                )
+
+    def _create_list_view(
+        self, view_class: type[NeontologyAPIView], tag: Tag, api_ver: str
+    ) -> callable:
+        """Create the list view function with proper decorators"""
+
+        api = self.api[api_ver]
+
+        @api.validate(resp=Response(HTTP_200=List[view_class.model]), tags=[tag])
+        def list_view():
+            f"""List all {view_class.resource_name}"""
+            view_instance = view_class()
+            return view_instance.get(pp=None)
+
+        list_view.__name__ = f"{view_class.resource_name}_list"
+        list_view.__doc__ = f"Get all {view_class.resource_name}"
+
+        return list_view
+
+    def _create_detail_view(
+        self, view_class: type[NeontologyAPIView], tag: Tag, api_ver: str
+    ) -> callable:
+        """Create the detail view function with proper decorators"""
+
+        api = self.api[api_ver]
+
+        @api.validate(
+            resp=Response(HTTP_200=view_class.model, HTTP_404=None), tags=[tag]
+        )
+        def detail_view(pp):
+            f"""Get {view_class.resource_name[:-1]} by ID"""
+            view_instance = view_class()
+            return view_instance.get(pp=pp)
+
+        detail_view.__name__ = f"{view_class.resource_name}_detail"
+        detail_view.__doc__ = f"Get {view_class.resource_name[:-1]} by ID"
+
+        return detail_view
+
+    def _create_related_view(
+        self,
+        view_class: type[NeontologyAPIView],
+        relationship: str,
+        related_model: type[BaseNode],
+        tag: Tag,
+        api_ver: str,
+    ) -> callable:
+        """Create a related resource view function with proper decorators"""
+
+        api = self.api[api_ver]
+
+        @api.validate(
+            resp=Response(HTTP_200=List[related_model], HTTP_404=None), tags=[tag]
+        )
+        def related_view(pp: int):
+            f"""Get {relationship} for {view_class.resource_name[:-1]}"""
+            view_instance = view_class()
+            return view_instance.get(pp=pp, relationship=relationship)
+
+        related_view.__name__ = f"{view_class.resource_name}_{relationship}"
+        related_view.__doc__ = (
+            f"Get {relationship} for a {view_class.resource_name[:-1]}"
+        )
+
+        return related_view
 
     def get_graph(self) -> GraphConnection:
         if "neontology_gc" not in g:

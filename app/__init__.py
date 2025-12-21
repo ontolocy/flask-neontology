@@ -9,7 +9,7 @@ from .ontology.author import NeontologyAuthorNode
 from .ontology.page import (
     NeontologyPageNode,
 )
-from .views.pages import NeontologyPageListView, NeontologyPageView
+from .views.pages import NeontologyPageListView, NeontologyPageView, PageAPIView
 
 nm = NeontologyManager()
 
@@ -43,11 +43,16 @@ def create_app(app_env="DEV", config: Optional[GraphEngineConfig] = None) -> Fla
         NeontologyPageView,
     ]
 
+    api_views = {
+        "v1": [PageAPIView],
+    }
+
     nm.init_app(
         app=app,
         graph_config=config,
         autograph_nodes=nodes,
         views=node_pages,
+        api_views=api_views,
     )
 
     #

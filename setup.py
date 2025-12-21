@@ -15,5 +15,6 @@ setup(
         "markdown-link-attr-modifier",
         "email-validator",
         "PyYAML",
+        "spectree",
     ],
 )

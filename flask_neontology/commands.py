@@ -136,4 +136,21 @@ def freeze(directory) -> None:
                         "<pp>", urllib.parse.quote(str(node.get_pp()))
                     )
 
+        for api_ver, api_views in neontology_manager.api_views.items():
+            for api_view in api_views:
+                # first do the list endpoint
+                yield api_view.get_list_endpoint(api_ver)
+
+                nodes = api_view().match_nodes()
+
+                for node in nodes:
+                    yield api_view.get_detail_endpoint(api_ver).replace(
+                        "<pp>", urllib.parse.quote(str(node.get_pp()))
+                    )
+                    for rel_type in api_view.related_resources.keys():
+                        print(f"Freezing related: {rel_type}")
+                        yield api_view.get_related_endpoint(rel_type, api_ver).replace(
+                            "<pp>", urllib.parse.quote(str(node.get_pp()))
+                        )
+
     freezer.freeze()
