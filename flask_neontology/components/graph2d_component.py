@@ -55,7 +55,12 @@ fetch("{{data.url}}").then(res => res.json()).then(gData3 => {
             graph_data = {"directed": True, "nodes": [], "edges": []}
 
             graph_data["nodes"] = [
-                {"__pp__": x["__pp__"], "__str__": x["__str__"], "LABEL": x["LABEL"]}
+                {
+                    # Add label for nodes of same pp but different label
+                    "__pp__": f"{x['LABEL']}#{x['__pp__']}",
+                    "__str__": x["__str__"],
+                    "LABEL": x["LABEL"],
+                }
                 for x in self.results.node_link_data["nodes"]
             ]
 
@@ -64,8 +69,8 @@ fetch("{{data.url}}").then(res => res.json()).then(gData3 => {
                     "RELATIONSHIP_TYPE": x["RELATIONSHIP_TYPE"],
                     "SOURCE_LABEL": x["SOURCE_LABEL"],
                     "TARGET_LABEL": x["TARGET_LABEL"],
-                    "source": x["source"],
-                    "target": x["target"],
+                    "source": f"{x['SOURCE_LABEL']}#{x['source']}",
+                    "target": f"{x['TARGET_LABEL']}#{x['target']}",
                 }
                 for x in self.results.node_link_data["edges"]
             ]
